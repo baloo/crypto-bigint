@@ -216,13 +216,15 @@ impl<const LIMBS: usize> FixedMontyParams<LIMBS> {
 pub(crate) mod boxed {
     use super::MontyParams;
     use crate::{Limb, Odd, U64, Word};
-    use alloc::sync::Arc;
     use core::fmt::{self, Debug};
+
+    #[cfg(feature = "zeroize")]
+    use zeroize::Zeroize;
 
     /// Parameters to efficiently go to/from the Montgomery form for an odd modulus whose size and value
     /// are both chosen at runtime.
     #[derive(Clone, Eq, PartialEq)]
-    pub struct BoxedMontyParams(Arc<MontyParams<crate::uint::boxed::BoxedUint>>);
+    pub struct BoxedMontyParams(MontyParams<crate::uint::boxed::BoxedUint>);
 
     impl BoxedMontyParams {
         /// Instantiates a new set of [`BoxedMontyParams`] representing the given `modulus`.
@@ -249,16 +251,13 @@ pub(crate) mod boxed {
 
             let mod_leading_zeros = modulus.as_ref().leading_zeros().min(Word::BITS - 1);
 
-            Self(
-                MontyParams {
-                    modulus,
-                    one,
-                    r2,
-                    mod_inv,
-                    mod_leading_zeros,
-                }
-                .into(),
-            )
+            Self(MontyParams {
+                modulus,
+                one,
+                r2,
+                mod_inv,
+                mod_leading_zeros,
+            })
         }
 
         /// Instantiates a new set of [`BoxedMontyParams`] representing the given `modulus`.
@@ -286,16 +285,13 @@ pub(crate) mod boxed {
 
             let mod_leading_zeros = modulus.as_ref().leading_zeros().min(Word::BITS - 1);
 
-            Self(
-                MontyParams {
-                    modulus,
-                    one,
-                    r2,
-                    mod_inv,
-                    mod_leading_zeros,
-                }
-                .into(),
-            )
+            Self(MontyParams {
+                modulus,
+                one,
+                r2,
+                mod_inv,
+                mod_leading_zeros,
+            })
         }
 
         /// Modulus value.
@@ -345,7 +341,14 @@ pub(crate) mod boxed {
 
     impl From<MontyParams<crate::uint::boxed::BoxedUint>> for BoxedMontyParams {
         fn from(params: MontyParams<crate::uint::boxed::BoxedUint>) -> Self {
-            Self(params.into())
+            Self(params)
+        }
+    }
+
+    #[cfg(feature = "zeroize")]
+    impl Zeroize for BoxedMontyParams {
+        fn zeroize(&mut self) {
+            self.0.zeroize();
         }
     }
 }
